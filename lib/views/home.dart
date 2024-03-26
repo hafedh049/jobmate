@@ -59,20 +59,60 @@ class _HomeState extends State<Home> {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: StatefulBuilder(
-                    builder: (BuildContext context, void Function(void Function()) _) {
-                      return TextField(
-                        onChanged: (String value) {
-                          if (value.length <= 1) {
-                            _(() {});
-                          }
-                        },
-                        controller: _filterController,
-                      );
-                    },
+                  child: Container(
+                    height: 30,
+                    decoration: BoxDecoration(color: greyColor.withOpacity(.3), borderRadius: BorderRadius.circular(5)),
+                    child: StatefulBuilder(
+                      builder: (BuildContext context, void Function(void Function()) _) {
+                        return TextField(
+                          onChanged: (String value) {
+                            if (value.length <= 1) {
+                              _(() {});
+                            }
+                          },
+                          controller: _filterController,
+                          cursorColor: lightOrangeColor,
+                          cursorWidth: 2,
+                          style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(8),
+                            labelText: "Job filter",
+                            labelStyle: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: blackColor),
+                            hintText: "Search a specific job",
+                            hintStyle: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                InkWell(
+                  hoverColor: transparentColor,
+                  splashColor: transparentColor,
+                  highlightColor: transparentColor,
+                  onTap: () {},
+                  child: Container(
+                    height: 30,
+                    width: 30,
+                    decoration: BoxDecoration(color: lightOrangeColor, borderRadius: BorderRadius.circular(5)),
+                    alignment: Alignment.center,
+                    child: const Icon(FontAwesome.magnifying_glass_solid, size: 20, color: whiteColor),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 300,
+              child: ListView.separated(
+                itemBuilder: (BuildContext context, int index) => Container(),
+                separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 10),
+                itemCount: _popularJobs.length,
+                padding: EdgeInsets.zero,
+                physics: const BouncingScrollPhysics(),
+              ),
             ),
           ],
         ),
