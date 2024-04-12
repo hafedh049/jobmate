@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
-import 'package:jobmate/models/job_model.dart';
+import 'package:jobmate/utils/callbacks.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import '../utils/shared.dart';
 
 class JobDetails extends StatefulWidget {
   const JobDetails({super.key, required this.job});
-  final JobModel job;
+  final Map<String, dynamic> job;
   @override
   State<JobDetails> createState() => _JobDetailsState();
 }
@@ -16,6 +18,15 @@ class JobDetails extends StatefulWidget {
 class _JobDetailsState extends State<JobDetails> {
   final List<String> _buttons = const <String>["About", "Qualifications", "Responsabilities"];
   String _button = "About";
+
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +48,7 @@ class _JobDetailsState extends State<JobDetails> {
                 ),
               ],
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
@@ -47,9 +58,9 @@ class _JobDetailsState extends State<JobDetails> {
               child: const Icon(FontAwesome.cubes_stacked_solid, size: 20, color: blueColor),
             ),
             const SizedBox(height: 20),
-            Text(widget.job.title, style: GoogleFonts.itim(fontSize: 20, fontWeight: FontWeight.w500, color: blackColor)),
+            Text(widget.job["job_title"], style: GoogleFonts.itim(fontSize: 20, fontWeight: FontWeight.w500, color: blackColor)),
             const SizedBox(height: 10),
-            Text(widget.job.location, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
+            Text(widget.job["job_country"], style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
             const SizedBox(height: 10),
             StatefulBuilder(
               builder: (BuildContext context, void Function(void Function()) _) {
@@ -61,7 +72,10 @@ class _JobDetailsState extends State<JobDetails> {
                         hoverColor: transparentColor,
                         splashColor: transparentColor,
                         highlightColor: transparentColor,
-                        onTap: () => _(() => _button = button),
+                        onTap: () {
+                          _pageController.jumpToPage(_buttons.indexOf(button));
+                          _(() => _button = button);
+                        },
                         child: AnimatedContainer(
                           duration: 500.ms,
                           padding: const EdgeInsets.all(8),
@@ -75,43 +89,102 @@ class _JobDetailsState extends State<JobDetails> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: PageView.builder(
-                onPageChanged: (int value) {},
-                itemCount: _buttons.length,
-                itemBuilder: (BuildContext context, int index) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(width: .3, color: greyColor),
-                    boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text("About the JOB", style: GoogleFonts.itim(fontSize: 22, fontWeight: FontWeight.w500, color: blackColor)),
-                      const SizedBox(height: 10),
-                      Text("Overview", style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)),
-                      const SizedBox(height: 10),
-                      SingleChildScrollView(child: Text(widget.job.description, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor))),
-                    ],
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(width: .3, color: greyColor),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: PageView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  controller: _pageController,
+                  children: <Widget>[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text("About the JOB", style: GoogleFonts.itim(fontSize: 22, fontWeight: FontWeight.w500, color: blackColor)),
+                        const SizedBox(height: 10),
+                        Text("Overview", style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)),
+                        const SizedBox(height: 10),
+                        Expanded(child: SingleChildScrollView(child: Text(widget.job["job_description"], style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)))),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text("QUALIFICATIONS", style: GoogleFonts.itim(fontSize: 22, fontWeight: FontWeight.w500, color: blackColor)),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: widget.job["job_highlights"]["Qualifications"] == null
+                              ? Text("N/A", style: GoogleFonts.itim(fontSize: 22, fontWeight: FontWeight.w500, color: blackColor))
+                              : SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      for (final String item in widget.job["job_highlights"]["Qualifications"]) ...<Widget>[
+                                        Text(item, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)),
+                                        const SizedBox(height: 10),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text("BENEFITS", style: GoogleFonts.itim(fontSize: 22, fontWeight: FontWeight.w500, color: blackColor)),
+                        const SizedBox(height: 10),
+                        widget.job["job_highlights"]["Benefits"] == null
+                            ? Text("N/A", style: GoogleFonts.itim(fontSize: 22, fontWeight: FontWeight.w500, color: blackColor))
+                            : Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      for (final String item in widget.job["job_highlights"]["Benefits"]) ...<Widget>[
+                                        Text(item, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)),
+                                        const SizedBox(height: 10),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 10),
             Row(
               children: <Widget>[
-                InkWell(
-                  hoverColor: transparentColor,
-                  splashColor: transparentColor,
-                  highlightColor: transparentColor,
-                  onTap: () {},
-                  child: Container(
-                    decoration: BoxDecoration(border: Border.all(color: lightOrangeColor, width: 1.5), borderRadius: BorderRadius.circular(5)),
-                    padding: const EdgeInsets.all(8),
-                    alignment: Alignment.center,
-                    child: const Icon(FontAwesome.heart, size: 20, color: lightOrangeColor),
-                  ),
+                StatefulBuilder(
+                  builder: (BuildContext context, void Function(void Function()) _) {
+                    return InkWell(
+                      hoverColor: transparentColor,
+                      splashColor: transparentColor,
+                      highlightColor: transparentColor,
+                      onTap: () {
+                        if (user!.get("favorites").where((e) => e["job_id"] == widget.job["job_id"]).isEmpty) {
+                          user!.put("favorites", user!.get("favorites")..add(widget.job));
+                          showToast(context, "Added to favorites");
+                          _(() {});
+                        } else {
+                          showToast(context, "Already added to favorites");
+                        }
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(border: Border.all(color: lightOrangeColor, width: 1.5), borderRadius: BorderRadius.circular(5)),
+                        padding: const EdgeInsets.all(8),
+                        alignment: Alignment.center,
+                        child: Icon(user!.get("favorites").where((e) => e["job_id"] == widget.job["job_id"]).isEmpty ? FontAwesome.heart : FontAwesome.heart_solid, size: 20, color: lightOrangeColor),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -119,7 +192,7 @@ class _JobDetailsState extends State<JobDetails> {
                     hoverColor: transparentColor,
                     splashColor: transparentColor,
                     highlightColor: transparentColor,
-                    onTap: () {},
+                    onTap: () async => await launchUrlString(widget.job["job_google_link"]),
                     child: Container(
                       decoration: BoxDecoration(color: lightOrangeColor, borderRadius: BorderRadius.circular(15)),
                       padding: const EdgeInsets.all(8),

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
-import 'package:jobmate/models/job_model.dart';
 
 import '../utils/shared.dart';
 
 class ShowAll extends StatefulWidget {
   const ShowAll({super.key, required this.jobs});
-  final List<JobModel> jobs;
+  final List<Map<String, dynamic>> jobs;
   @override
   State<ShowAll> createState() => _ShowAllState();
 }
@@ -53,9 +52,9 @@ class _ShowAllState extends State<ShowAll> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            Text(widget.jobs[index].title, style: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: greyColor)),
+                            Text(widget.jobs[index]["job_title"], style: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: greyColor)),
                             const SizedBox(height: 10),
-                            Text(widget.jobs[index].employmentType, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
+                            Text(widget.jobs[index]["employer_company_type"], style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
                           ],
                         ),
                       ),

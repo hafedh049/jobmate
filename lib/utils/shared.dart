@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 const Color lightOrangeColor = Color.fromARGB(255, 248, 114, 87);
 const Color whiteColor = Color.fromARGB(255, 250, 249, 252);
@@ -14,7 +15,7 @@ String requiredAPIApp = "default-application_8836899";
 String requestURL = "rapidapi.com";
 
 //Header Parameters
-String apiHost = " http://192.168.0.179:5555";
+String apiHost = "http://192.168.0.179:5555";
 
 //Required Parameters
 String query = "Web Developer";
@@ -28,3 +29,5 @@ String datePosted = "month";
 String employmentTypes = "fulltime;parttime;intern;contractor";
 String allowedJobProviders = "";
 String index = "0";
+
+Box? user;

@@ -1,12 +1,9 @@
-import 'dart:convert';
-
-//import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
-import 'package:jobmate/models/job_model.dart';
 import 'package:jobmate/utils/shared.dart';
 import 'package:jobmate/views/job_details.dart';
 import 'package:jobmate/views/show_all.dart';
@@ -30,51 +27,62 @@ class _HomeState extends State<Home> {
     super.dispose();
   }
 
-  List<JobModel> _popularJobs = <JobModel>[];
-  List<JobModel> _nearbyJobs = <JobModel>[];
+  List<Map<String, dynamic>> _popularJobs = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _nearbyJobs = <Map<String, dynamic>>[];
 
   final List<String> _jobsTypes = const <String>["Full-time", "Part-time", "Contractor"];
   String _selectedJobType = "Full-time";
 
   final GlobalKey<State<StatefulWidget>> _popularKey = GlobalKey<State<StatefulWidget>>();
   final GlobalKey<State<StatefulWidget>> _nearbyKey = GlobalKey<State<StatefulWidget>>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  Future<List<JobModel>> _fetchPopularJobs() async {
-    /*final Response response = await Dio().get(
-      "$apiHost/popular-jobs",
-      queryParameters: <String, String>{
-        "query": query,
-        "location": location,
-        "distance": distance,
-        "language": language,
-        "remoteOnly": remoteOnly,
-        "datePosted": datePosted,
-        "employmentTypes": employmentTypes,
-        "index": index,
-      },
+  Future<List<Map<String, dynamic>>> _fetchPopularJobs() async {
+    const String url = "https://jsearch.p.rapidapi.com/search";
+    final Map<String, dynamic> queryParameters = <String, dynamic>{
+      "query": _filterController.text.trim().isEmpty ? "Python developer" : _filterController.text.trim(),
+      "page": "1",
+      "num_pages": "1",
+    };
+
+    final Map<String, dynamic> headers = <String, dynamic>{
+      "X-RapidAPI-Key": "144c6ec532msh774a6839c2a40b2p1a44eejsna62dcd20790c",
+      "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+    };
+
+    final Dio dio = Dio();
+
+    final Response response = await dio.get(
+      url,
+      queryParameters: queryParameters,
+      options: Options(headers: headers),
     );
-    return response.data["jobs"].map((json) => JobModel.fromJson(json)).toList();
-    */
-    return json.decode(await rootBundle.loadString("assets/popular-jobs.json")).map((dynamic e) => JobModel.fromJson(e)).toList().cast<JobModel>();
+
+    return response.data["data"].cast<Map<String, dynamic>>();
   }
 
-  Future<List<JobModel>> _fetchNearbyJobs() async {
-    /*final Response response = await Dio().get(
-      "$apiHost/nearby-jobs",
-      queryParameters: <String, String>{
-        "query": query,
-        "location": location,
-        "distance": distance,
-        "language": language,
-        "remoteOnly": remoteOnly,
-        "datePosted": datePosted,
-        "employmentTypes": employmentTypes,
-        "index": index,
-      },
+  Future<List<Map<String, dynamic>>> _fetchNearbyJobs() async {
+    const String url = "https://jsearch.p.rapidapi.com/search";
+    final Map<String, dynamic> queryParameters = <String, dynamic>{
+      "query": _filterController.text.trim().isEmpty ? "Python developer" : _filterController.text.trim(),
+      "page": "1",
+      "num_pages": "1",
+    };
+
+    final Map<String, dynamic> headers = <String, dynamic>{
+      "X-RapidAPI-Key": "144c6ec532msh774a6839c2a40b2p1a44eejsna62dcd20790c",
+      "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+    };
+
+    final Dio dio = Dio();
+
+    final Response response = await dio.get(
+      url,
+      queryParameters: queryParameters,
+      options: Options(headers: headers),
     );
-    return response.data["jobs"].map((json) => JobModel.fromJson(json)).toList();
-    */
-    return json.decode(await rootBundle.loadString("assets/nearby-jobs.json")).map((dynamic e) => JobModel.fromJson(e)).toList().cast<JobModel>();
+
+    return response.data["data"].cast<Map<String, dynamic>>();
   }
 
   @override
@@ -82,6 +90,47 @@ class _HomeState extends State<Home> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
+        key: _scaffoldKey,
+        drawer: Drawer(
+          child: StatefulBuilder(
+            builder: (BuildContext context, void Function(void Function()) _) => user!.get("favorites").isEmpty
+                ? Center(child: LottieBuilder.asset("assets/lotties/empty.json"))
+                : ListView.separated(
+                    itemBuilder: (BuildContext context, int index) => Container(
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(left: 16),
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), color: greyColor.withOpacity(.1)),
+                      child: Row(
+                        children: <Widget>[
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(user!.get("favorites")[index]["job_title"], style: GoogleFonts.itim(fontSize: 18, fontWeight: FontWeight.w500, color: whiteColor)),
+                              const SizedBox(height: 20),
+                              Text(user!.get("favorites")[index]["job_publisher"], style: GoogleFonts.itim(fontSize: 18, fontWeight: FontWeight.w500, color: whiteColor)),
+                              const SizedBox(height: 20),
+                              Text(user!.get("favorites")[index]["job_employment_type"], style: GoogleFonts.itim(fontSize: 18, fontWeight: FontWeight.w500, color: whiteColor)),
+                              const SizedBox(height: 20),
+                            ],
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () {
+                              user!.put("favorites", user!.get("favorites")..removeAt(index));
+                              showToast(context, "Job removed from favorites");
+                              _(() {});
+                            },
+                            icon: const Icon(FontAwesome.x_solid, color: redColor, size: 20),
+                          ),
+                        ],
+                      ),
+                    ),
+                    separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 20),
+                    itemCount: user!.get("favorites").length,
+                  ),
+          ),
+        ),
         resizeToAvoidBottomInset: false,
         body: Padding(
           padding: const EdgeInsets.all(24),
@@ -92,7 +141,7 @@ class _HomeState extends State<Home> {
               Row(
                 children: <Widget>[
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => _scaffoldKey.currentState!.openDrawer(),
                     icon: const Icon(FontAwesome.bars_staggered_solid, size: 20, color: greyColor),
                   ),
                   const Spacer(),
@@ -215,62 +264,63 @@ class _HomeState extends State<Home> {
               const SizedBox(height: 10),
               SizedBox(
                 height: 160,
-                child: FutureBuilder<List<JobModel>>(
-                  future: _fetchPopularJobs(),
-                  builder: (BuildContext context, AsyncSnapshot<List<JobModel>> snapshot) {
-                    if (snapshot.hasData) {
-                      return StatefulBuilder(
-                          key: _popularKey,
-                          builder: (BuildContext context, void Function(void Function()) _) {
-                            _popularJobs = snapshot.data!.where((JobModel element) => element.title.toLowerCase().contains(_filterController.text.trim().toLowerCase())).toList();
-                            return _popularJobs.isEmpty
-                                ? LottieBuilder.asset("assets/lotties/empty.json")
-                                : ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemBuilder: (BuildContext context, int index) => InkWell(
-                                      hoverColor: transparentColor,
-                                      splashColor: transparentColor,
-                                      highlightColor: transparentColor,
-                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => JobDetails(job: _popularJobs[index]))),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(15),
-                                          border: Border.all(width: .3, color: greyColor),
-                                          boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
-                                        ),
-                                        padding: const EdgeInsets.all(16),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: <Widget>[
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(15),
-                                                boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 3), color: blackColor.withOpacity(.3))],
-                                              ),
-                                              padding: const EdgeInsets.all(4),
-                                              child: const Icon(FontAwesome.cubes_stacked_solid, size: 20, color: blueColor),
+                child: StatefulBuilder(
+                  key: _popularKey,
+                  builder: (BuildContext context, void Function(void Function()) _) {
+                    return FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _fetchPopularJobs(),
+                      builder: (BuildContext context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+                        if (snapshot.hasData) {
+                          _popularJobs = snapshot.data!.where((Map<String, dynamic> element) => element["job_title"].toLowerCase().contains(_filterController.text.trim().toLowerCase())).toList();
+                          return _popularJobs.isEmpty
+                              ? LottieBuilder.asset("assets/lotties/empty.json")
+                              : ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemBuilder: (BuildContext context, int index) => InkWell(
+                                    hoverColor: transparentColor,
+                                    splashColor: transparentColor,
+                                    highlightColor: transparentColor,
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => JobDetails(job: _popularJobs[index]))),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(15),
+                                        border: Border.all(width: .3, color: greyColor),
+                                        boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
+                                      ),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(15),
+                                              boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 3), color: blackColor.withOpacity(.3))],
                                             ),
-                                            const SizedBox(height: 10),
-                                            Flexible(child: Text(_popularJobs[index].company, style: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: greyColor))),
-                                            const SizedBox(height: 10),
-                                            Text(_popularJobs[index].title, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
-                                            const SizedBox(height: 10),
-                                            Text(_popularJobs[index].location, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)),
-                                          ],
-                                        ),
+                                            padding: const EdgeInsets.all(4),
+                                            child: const Icon(FontAwesome.cubes_stacked_solid, size: 20, color: blueColor),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Flexible(child: Text(_popularJobs[index]["job_title"], style: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: greyColor))),
+                                          const SizedBox(height: 10),
+                                          Text(_popularJobs[index]["job_publisher"], style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
+                                          const SizedBox(height: 10),
+                                          Text(_popularJobs[index]["job_employment_type"], style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: greyColor)),
+                                        ],
                                       ),
                                     ),
-                                    separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 10),
-                                    itemCount: _popularJobs.length,
-                                    padding: EdgeInsets.zero,
-                                    physics: const BouncingScrollPhysics(),
-                                  );
-                          });
-                    } else if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator(color: lightOrangeColor));
-                    } else {
-                      return Text(snapshot.error.toString(), style: GoogleFonts.itim(fontSize: 14, fontWeight: FontWeight.w500, color: blackColor));
-                    }
+                                  ),
+                                  separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 10),
+                                  itemCount: _popularJobs.length,
+                                  padding: EdgeInsets.zero,
+                                  physics: const BouncingScrollPhysics(),
+                                );
+                        } else if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: lightOrangeColor));
+                        } else {
+                          return Text(snapshot.error.toString(), style: GoogleFonts.itim(fontSize: 14, fontWeight: FontWeight.w500, color: blackColor));
+                        }
+                      },
+                    );
                   },
                 ),
               ),
@@ -296,67 +346,68 @@ class _HomeState extends State<Home> {
               ),
               const SizedBox(height: 10),
               Expanded(
-                child: FutureBuilder<List<JobModel>>(
-                  future: _fetchNearbyJobs(),
-                  builder: (BuildContext context, AsyncSnapshot<List<JobModel>> snapshot) {
-                    if (snapshot.hasData) {
-                      return StatefulBuilder(
-                          key: _nearbyKey,
-                          builder: (BuildContext context, void Function(void Function()) _) {
-                            _nearbyJobs = snapshot.data!.where((JobModel element) => element.title.toLowerCase().contains(_filterController.text.trim().toLowerCase())).toList();
-                            return _nearbyJobs.isEmpty
-                                ? LottieBuilder.asset("assets/lotties/empty.json")
-                                : ListView.separated(
-                                    itemBuilder: (BuildContext context, int index) => InkWell(
-                                      hoverColor: transparentColor,
-                                      splashColor: transparentColor,
-                                      highlightColor: transparentColor,
-                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => JobDetails(job: _nearbyJobs[index]))),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(15),
-                                          border: Border.all(width: .3, color: greyColor),
-                                          boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
-                                        ),
-                                        padding: const EdgeInsets.all(16),
-                                        child: Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: <Widget>[
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(15),
-                                                boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
-                                              ),
-                                              padding: const EdgeInsets.all(4),
-                                              child: const Icon(FontAwesome.cubes_stacked_solid, size: 20, color: blueColor),
+                child: StatefulBuilder(
+                  key: _nearbyKey,
+                  builder: (BuildContext context, void Function(void Function()) _) {
+                    return FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _fetchNearbyJobs(),
+                      builder: (BuildContext context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+                        if (snapshot.hasData) {
+                          _nearbyJobs = snapshot.data!.where((Map<String, dynamic> element) => element["job_title"].toLowerCase().contains(_filterController.text.trim().toLowerCase())).toList();
+                          return _nearbyJobs.isEmpty
+                              ? LottieBuilder.asset("assets/lotties/empty.json")
+                              : ListView.separated(
+                                  itemBuilder: (BuildContext context, int index) => InkWell(
+                                    hoverColor: transparentColor,
+                                    splashColor: transparentColor,
+                                    highlightColor: transparentColor,
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => JobDetails(job: _nearbyJobs[index]))),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(15),
+                                        border: Border.all(width: .3, color: greyColor),
+                                        boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
+                                      ),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(15),
+                                              boxShadow: <BoxShadow>[BoxShadow(blurRadius: 25, blurStyle: BlurStyle.outer, offset: const Offset(1, 1), color: greyColor.withOpacity(.1))],
                                             ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: <Widget>[
-                                                  Text(_nearbyJobs[index].title, style: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: greyColor)),
-                                                  const SizedBox(height: 10),
-                                                  Text(_nearbyJobs[index].employmentType, style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
-                                                ],
-                                              ),
+                                            padding: const EdgeInsets.all(4),
+                                            child: const Icon(FontAwesome.cubes_stacked_solid, size: 20, color: blueColor),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: <Widget>[
+                                                Text(_nearbyJobs[index]["job_title"], style: GoogleFonts.itim(fontSize: 12, fontWeight: FontWeight.w500, color: greyColor)),
+                                                const SizedBox(height: 10),
+                                                Text(_nearbyJobs[index]["job_employment_type"], style: GoogleFonts.itim(fontSize: 16, fontWeight: FontWeight.w500, color: blackColor)),
+                                              ],
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10),
-                                    itemCount: _nearbyJobs.length,
-                                    padding: EdgeInsets.zero,
-                                    physics: const BouncingScrollPhysics(),
-                                  );
-                          });
-                    } else if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator(color: lightOrangeColor));
-                    } else {
-                      return Text(snapshot.error.toString(), style: GoogleFonts.itim(fontSize: 14, fontWeight: FontWeight.w500, color: blackColor));
-                    }
+                                  ),
+                                  separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10),
+                                  itemCount: _nearbyJobs.length,
+                                  padding: EdgeInsets.zero,
+                                  physics: const BouncingScrollPhysics(),
+                                );
+                        } else if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator(color: lightOrangeColor));
+                        } else {
+                          return Text(snapshot.error.toString(), style: GoogleFonts.itim(fontSize: 14, fontWeight: FontWeight.w500, color: blackColor));
+                        }
+                      },
+                    );
                   },
                 ),
               ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:jobmate/utils/callbacks.dart';
 
 import 'views/home.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await init();
   runApp(const Main());
 }
 
